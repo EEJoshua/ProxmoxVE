@@ -21,7 +21,7 @@ function update_script() {
     header_info
     check_container_storage
     check_container_resources
-    if [[ ! -f /usr/local/bin/box ]]; then
+    if [[ ! -f /usr/local/bin/swizzin/box ]]; then
         msg_error "No ${APP} installation found!"
         exit
     fi
