@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # Swizzin Seedbox – Proxmox Helper‑Script (CT)
-source <(curl -fsSL https://raw.githubusercontent.com/EEJoshua/ProxmoxVE/main/misc/build.func)
+source <(curl -fsSL https://raw.githubusercontent.com/community-scripts/ProxmoxVE/main/misc/build.func)
 # Copyright (c) 2021-2025 community-scripts ORG
 # Author: EEJoshua
 # License: MIT | https://github.com/community-scripts/ProxmoxVE/raw/main/LICENSE
