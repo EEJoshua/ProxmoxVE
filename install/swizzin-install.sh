@@ -16,7 +16,7 @@ update_os
 msg_info "Installing Dependencies"
 $STD apt-get install -y curl wget gnupg lsb-release
 
-msg_info "Launching upstream Swizzin installer..."
+echo -e "Launching upstream Swizzin installer..."
 bash <(curl -sL git.io/swizzin)
 msg_info "Cleaning up"
 $STD apt-get -y autoremove
