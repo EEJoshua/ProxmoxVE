@@ -1,19 +1,22 @@
 #!/usr/bin/env bash
 # Swizzin Seedbox – Proxmox Helper‑Script (CT)
 source <(curl -fsSL https://raw.githubusercontent.com/community-scripts/ProxmoxVE/main/misc/build.func)
-# Copyright (c) 2021‑2025 tteck | MIT
+# Copyright (c) 2021-2025 community-scripts ORG
+# Author: EEJoshua
+# License: MIT | https://github.com/community-scripts/ProxmoxVE/raw/main/LICENSE
+# Source: https://swizzin.ltd/
 
-APP="Swizzin"                        # Display name in the wizard
-var_tags="${var_tags:-seedbox}"      # Tag shown on helper‑scripts.com
-var_cpu="${var_cpu:-2}"              # Default vCPU cores
-var_ram="${var_ram:-4096}"           # Default RAM (MiB)
-var_disk="${var_disk:-20}"           # Default disk (GiB)
-var_os="${var_os:-debian}"           # Base template family
-var_version="${var_version:-12}"     # Template release (Bookworm)
-var_unprivileged="${var_unprivileged:-1}"   # Unprivileged container
+APP="Swizzin"
+var_tags="${var_tags:-seedbox}"
+var_cpu="${var_cpu:-2}"
+var_ram="${var_ram:-4096}"
+var_disk="${var_disk:-20}"
+var_os="${var_os:-debian}"
+var_version="${var_version:-12}"
+var_unprivileged="${var_unprivileged:-1}"
 
 header_info   "$APP"
-variables     # sets NSAPP & var_install automatically (=> swizzin-install)
+variables
 color
 catch_errors
 
@@ -31,11 +34,13 @@ function update_script() {
     exit
 }
 
-start               # shell / PVE sanity checks
-build_container     # launches the interactive wizard
-description         # writes a nice HTML note into the CT config
+start
+build_container
+description
 
 msg_ok "Completed Successfully!\n"
 echo -e "${CREATING}${GN}${APP} setup has been successfully initialized!${CL}"
-echo -e "${INFO}${YW}Attach with:${CL}  pct console ${CTID}"
-echo -e "${INFO}${YW}Then complete Swizzin’s menu, or run:${CL}  box"
+echo -e "${CREATING}${GN}${APP} Access it by running 'sudo box' inside the new container${CL}"
+echo -e "${INFO}${YW}If installed panel, access through the following URL:${CL}"
+echo -e "${TAB}${GATEWAY}${BGN}http://${IP}${CL}"
+
