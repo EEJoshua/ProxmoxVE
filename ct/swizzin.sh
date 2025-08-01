@@ -22,12 +22,12 @@ function update_script() {
     check_container_storage
     check_container_resources
     if ! command -v sudo box >/dev/null 2>&1; then
-        msg_error "No ${APP} installation found!"
+        msg_error "No ${APP} installation found!\n"
         exit
     fi
-    msg_info "Running 'sudo box update' inside the container"
+    msg_info "Running 'sudo box update' inside the container\n"
     sudo box update
-    msg_ok "Update finished"
+    msg_ok "Update finished\n"
     exit
 }
 
