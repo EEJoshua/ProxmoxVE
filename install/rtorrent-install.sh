@@ -16,10 +16,6 @@ update_os
 msg_info "Installing Dependencies"
 $STD apt-get install -y \
   nginx \
-  php-fpm \
-  php-cli \
-  php-curl \
-  php-mbstring \
   git \
   unzip \
   tmux \
@@ -42,11 +38,16 @@ $STD apt-get install -y \
   autoconf-archive
 msg_ok "Installed Dependencies"
 
+msg_info "Setting up PHP"
+PHP_VERSION="8.3"
+PHP_FPM="YES" PHP_MODULE="curl,mbstring,cli,xml,zip" setup_php
+msg_ok "Setup PHP"
+
 msg_info "Compiling XML-RPC-C"
 # Install stable XML-RPC-C for rTorrent
 svn checkout -q https://svn.code.sf.net/p/xmlrpc-c/code/stable xmlrpc-c
-cd xmlrpc-c
-./configure --disable-cplusplus >/dev/null
+cd xmlrpc-c || exit
+./configure --disable-cplusplus CXXFLAGS="-w" CFLAGS="-w" >/dev/null
 make -j$(nproc) >/dev/null
 make install >/dev/null
 cd ..
@@ -55,9 +56,9 @@ msg_ok "Compiled XML-RPC-C"
 
 msg_info "Compiling LibTorrent (Rakshasa)"
 git clone -q https://github.com/rakshasa/libtorrent.git /opt/libtorrent
-cd /opt/libtorrent
+cd /opt/libtorrent || exit
 autoreconf -fiv >/dev/null 2>&1
-./configure --disable-debug --enable-aligned >/dev/null
+./configure --disable-debug --enable-aligned CXXFLAGS="-w" CFLAGS="-w" >/dev/null
 make -j$(nproc) >/dev/null
 make install >/dev/null
 ldconfig
@@ -65,9 +66,9 @@ msg_ok "Compiled LibTorrent"
 
 msg_info "Compiling rTorrent (Rakshasa)"
 git clone -q https://github.com/rakshasa/rtorrent.git /opt/rtorrent-src
-cd /opt/rtorrent-src
+cd /opt/rtorrent-src || exit
 autoreconf -fiv >/dev/null 2>&1
-./configure --with-xmlrpc-c --disable-debug >/dev/null
+./configure --with-xmlrpc-c --disable-debug CXXFLAGS="-w" CFLAGS="-w" >/dev/null
 make -j$(nproc) >/dev/null
 make install >/dev/null
 msg_ok "Compiled rTorrent"
@@ -101,16 +102,13 @@ msg_ok "Created rTorrent Service"
 
 msg_info "Installing ruTorrent"
 mkdir -p /var/www
-git clone https://github.com/Novik/ruTorrent.git /var/www/rutorrent
+git clone -q https://github.com/Novik/ruTorrent.git /var/www/rutorrent
 chown -R www-data:www-data /var/www/rutorrent
 chmod -R 775 /var/www/rutorrent
 msg_ok "Installed ruTorrent"
 
-msg_info "Configuring Nginx & PHP"
+msg_info "Configuring Nginx"
 rm -f /etc/nginx/sites-enabled/default
-
-# Detect PHP version
-PHP_VER=$(php -v | head -n 1 | cut -d " " -f 2 | cut -f1-2 -d".")
 
 cat <<EOF >/etc/nginx/sites-available/rutorrent
 server {
@@ -128,7 +126,7 @@ server {
 
     location ~ \.php$ {
         include snippets/fastcgi-php.conf;
-        fastcgi_pass unix:/run/php/php${PHP_VER}-fpm.sock;
+        fastcgi_pass unix:/run/php/php${PHP_VERSION}-fpm.sock;
     }
 
     location /RPC2 {

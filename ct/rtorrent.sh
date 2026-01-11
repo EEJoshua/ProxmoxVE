@@ -35,7 +35,7 @@ function update_script() {
   if [[ -d /opt/libtorrent ]]; then
       cd /opt/libtorrent || exit
       git pull
-      ./autogen.sh
+      autoreconf -fiv
       ./configure --disable-debug --enable-aligned
       make -j$(nproc)
       make install
@@ -47,7 +47,7 @@ function update_script() {
   if [[ -d /opt/rtorrent-src ]]; then
       cd /opt/rtorrent-src || exit
       git pull
-      ./autogen.sh
+      autoreconf -fiv
       ./configure --with-xmlrpc-c --disable-debug
       make -j$(nproc)
       make install
