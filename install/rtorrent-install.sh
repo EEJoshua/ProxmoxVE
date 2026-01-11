@@ -14,6 +14,11 @@ network_check
 update_os
 
 msg_info "Installing Dependencies"
+# Ensure non-free is enabled for unrar
+if [[ -f /etc/apt/sources.list ]]; then
+    sed -i -r 's/main contrib( non-free)?/main contrib non-free/g' /etc/apt/sources.list
+fi
+$STD apt-get update
 $STD apt-get install -y \
   nginx \
   git \
@@ -35,7 +40,10 @@ $STD apt-get install -y \
   libssl-dev \
   subversion \
   libxml2-dev \
-  autoconf-archive
+  autoconf-archive \
+  python3 \
+  python-is-python3 \
+  unrar
 msg_ok "Installed Dependencies"
 
 msg_info "Setting up PHP"
@@ -44,11 +52,11 @@ PHP_FPM="YES" PHP_MODULE="curl,mbstring,cli,xml,zip" setup_php
 msg_ok "Setup PHP"
 
 msg_info "Compiling XML-RPC-C"
-# Install stable XML-RPC-C for rTorrent
-svn checkout -q https://svn.code.sf.net/p/xmlrpc-c/code/stable xmlrpc-c
+# Install advanced XML-RPC-C for rTorrent (required for i8 support)
+svn checkout -q https://svn.code.sf.net/p/xmlrpc-c/code/advanced xmlrpc-c
 cd xmlrpc-c || exit
 ./configure --disable-cplusplus CXXFLAGS="-w" CFLAGS="-w" >/dev/null
-make -j$(nproc) >/dev/null
+make -j$(nproc) CXXFLAGS="-w" CFLAGS="-w" >/dev/null
 make install >/dev/null
 cd ..
 rm -rf xmlrpc-c
