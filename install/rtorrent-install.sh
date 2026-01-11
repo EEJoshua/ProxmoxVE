@@ -18,6 +18,9 @@ msg_info "Installing Dependencies"
 if [[ -f /etc/apt/sources.list ]]; then
     sed -i -r 's/main contrib( non-free)?/main contrib non-free/g' /etc/apt/sources.list
 fi
+if [[ -f /etc/apt/sources.list.d/debian.sources ]]; then
+    sed -i -r 's/Components: main contrib/Components: main contrib non-free/g' /etc/apt/sources.list.d/debian.sources
+fi
 $STD apt-get update
 $STD apt-get install -y \
   nginx \
