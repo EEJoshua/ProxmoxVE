@@ -156,7 +156,7 @@ chown rtorrent:rtorrent /home/rtorrent/.rtorrent.rc
 # Restart services
 systemctl restart rtorrent
 systemctl restart nginx
-systemctl restart php"${PHP_VER}"-fpm
+systemctl restart php"${PHP_VERSION}"-fpm
 msg_ok "Configured Web Server"
 
 motd_ssh
