@@ -19,9 +19,17 @@ if [[ -f /etc/apt/sources.list ]]; then
     sed -i -r 's/main contrib( non-free)?/main contrib non-free/g' /etc/apt/sources.list
 fi
 if [[ -f /etc/apt/sources.list.d/debian.sources ]]; then
+    msg_info "Debug: debian.sources BEFORE modification:"
+    cat /etc/apt/sources.list.d/debian.sources
     sed -i -r 's/^Components: .*/& non-free non-free-firmware/g' /etc/apt/sources.list.d/debian.sources
+    msg_info "Debug: debian.sources AFTER modification:"
+    cat /etc/apt/sources.list.d/debian.sources
 fi
+msg_info "Debug: Updating apt cache..."
 $STD apt-get update
+msg_info "Debug: Checking unrar availability..."
+apt-cache policy unrar
+
 $STD apt-get install -y \
   nginx \
   git \
