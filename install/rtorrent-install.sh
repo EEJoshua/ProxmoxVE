@@ -37,39 +37,39 @@ $STD apt-get install -y \
   libsigc++-2.0-dev \
   zlib1g-dev \
   libssl-dev \
-  libcppunit-dev \
   subversion \
-  libxml2-dev
+  libxml2-dev \
+  autoconf-archive
 msg_ok "Installed Dependencies"
 
 msg_info "Compiling XML-RPC-C"
 # Install stable XML-RPC-C for rTorrent
-svn checkout https://svn.code.sf.net/p/xmlrpc-c/code/stable xmlrpc-c
-cd xmlrpc-c || exit
-./configure --disable-cplusplus
-make -j$(nproc)
-make install
+svn checkout -q https://svn.code.sf.net/p/xmlrpc-c/code/stable xmlrpc-c
+cd xmlrpc-c
+./configure --disable-cplusplus >/dev/null
+make -j$(nproc) >/dev/null
+make install >/dev/null
 cd ..
 rm -rf xmlrpc-c
 msg_ok "Compiled XML-RPC-C"
 
 msg_info "Compiling LibTorrent (Rakshasa)"
-git clone https://github.com/rakshasa/libtorrent.git /opt/libtorrent
-cd /opt/libtorrent || exit
-./autogen.sh
-./configure --disable-debug --enable-aligned
-make -j$(nproc)
-make install
+git clone -q https://github.com/rakshasa/libtorrent.git /opt/libtorrent
+cd /opt/libtorrent
+autoreconf -fiv >/dev/null 2>&1
+./configure --disable-debug --enable-aligned >/dev/null
+make -j$(nproc) >/dev/null
+make install >/dev/null
 ldconfig
 msg_ok "Compiled LibTorrent"
 
 msg_info "Compiling rTorrent (Rakshasa)"
-git clone https://github.com/rakshasa/rtorrent.git /opt/rtorrent-src
-cd /opt/rtorrent-src || exit
-./autogen.sh
-./configure --with-xmlrpc-c --disable-debug
-make -j$(nproc)
-make install
+git clone -q https://github.com/rakshasa/rtorrent.git /opt/rtorrent-src
+cd /opt/rtorrent-src
+autoreconf -fiv >/dev/null 2>&1
+./configure --with-xmlrpc-c --disable-debug >/dev/null
+make -j$(nproc) >/dev/null
+make install >/dev/null
 msg_ok "Compiled rTorrent"
 
 msg_info "Configuring rTorrent User"
