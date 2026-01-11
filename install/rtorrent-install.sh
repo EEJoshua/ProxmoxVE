@@ -15,9 +15,6 @@ update_os
 
 msg_info "Installing Dependencies"
 # Ensure non-free is enabled for unrar
-if [[ -f /etc/apt/sources.list ]]; then
-    sed -i -r 's/main contrib( non-free)?/main contrib non-free/g' /etc/apt/sources.list
-fi
 if [[ -f /etc/apt/sources.list.d/debian.sources ]]; then
     sed -i -r 's/^Components: .*/& non-free non-free-firmware/g' /etc/apt/sources.list.d/debian.sources
 fi
@@ -59,7 +56,7 @@ msg_info "Compiling XML-RPC-C"
 svn checkout -q https://svn.code.sf.net/p/xmlrpc-c/code/advanced xmlrpc-c
 cd xmlrpc-c || exit
 ./configure --disable-cplusplus CXXFLAGS="-w" CFLAGS="-w" >/dev/null
-make -j$(nproc) CXXFLAGS="-w" CFLAGS="-w" >/dev/null
+make -j$(nproc) CXXFLAGS="-w" CFLAGS="-w" ARFLAGS="rc" >/dev/null
 make install >/dev/null
 cd ..
 rm -rf xmlrpc-c
