@@ -147,7 +147,8 @@ systemctl enable -q --now rtorrent
 msg_ok "Created rTorrent Service"
 
 msg_info "Configuring autodl-irssi"
-# Download autodl-irssi (full package)
+# Download autodl-irssi (Community Edition - Full Package)
+# We use the zip to ensure we get the AutodlIrssi/ folder and all modules, not just the .pl file
 mkdir -p /home/rtorrent/.irssi/scripts/autoload
 curl -sL https://github.com/autodl-community/autodl-irssi/archive/master.zip -o /tmp/autodl.zip
 unzip -o /tmp/autodl.zip -d /tmp >/dev/null 2>&1
@@ -155,19 +156,22 @@ cp -r /tmp/autodl-irssi-master/AutodlIrssi /home/rtorrent/.irssi/scripts/
 cp /tmp/autodl-irssi-master/autodl-irssi.pl /home/rtorrent/.irssi/scripts/
 ln -sf /home/rtorrent/.irssi/scripts/autodl-irssi.pl /home/rtorrent/.irssi/scripts/autoload/autodl-irssi.pl
 rm -f /tmp/autodl.zip && rm -rf /tmp/autodl-irssi-master
+
 # Create config file
 mkdir -p /home/rtorrent/.autodl
 touch /home/rtorrent/.autodl/autodl.cfg
-# Generate password
+
+# Generate secure password (using python3 to avoid pipefail/sigpipe issues)
 AUTODL_PORT="51421"
 AUTODL_PASS=$(python3 -c "import secrets,string; print(''.join(secrets.choice(string.ascii_letters + string.digits) for i in range(20)))")
+
 echo "[options]" > /home/rtorrent/.autodl/autodl.cfg
 echo "gui-server-port = $AUTODL_PORT" >> /home/rtorrent/.autodl/autodl.cfg
 echo "gui-server-password = $AUTODL_PASS" >> /home/rtorrent/.autodl/autodl.cfg
 
 chown -R rtorrent:rtorrent /home/rtorrent/.irssi /home/rtorrent/.autodl
 
-# Create service
+# Create service for autodl-irssi (tmux detached)
 cat <<EOF >/etc/systemd/system/autodl-irssi.service
 [Unit]
 Description=autodl-irssi (irssi)
@@ -177,9 +181,11 @@ After=network.target
 Type=forking
 User=rtorrent
 Group=rtorrent
+# Start irssi in a detached tmux session named 'autodl'
 ExecStart=/usr/bin/tmux new-session -s autodl -n irssi -d '/usr/bin/irssi'
 ExecStop=/usr/bin/tmux kill-session -t autodl
 WorkingDirectory=/home/rtorrent
+# Critical: RemainAfterExit needed because tmux -d returns immediately
 RemainAfterExit=yes
 Restart=always
 
@@ -192,7 +198,7 @@ msg_ok "Configured autodl-irssi"
 msg_info "Installing ruTorrent"
 mkdir -p /var/www
 git clone -q https://github.com/Novik/ruTorrent.git /var/www/rutorrent
-# Patch settings.php to disable false positive XML-RPC version check (issue with to_kb method)
+# Patch settings.php to disable false positive XML-RPC version check
 sed -i 's/public \$badXMLRPCVersion = true;/public \$badXMLRPCVersion = false;/' /var/www/rutorrent/php/settings.php
 chown -R www-data:www-data /var/www/rutorrent
 chmod -R 775 /var/www/rutorrent
@@ -202,8 +208,10 @@ msg_ok "Installed ruTorrent"
 msg_info "Installing autodl-irssi Plugin"
 git clone -q https://github.com/autodl-community/autodl-rutorrent.git /var/www/rutorrent/plugins/autodl-irssi
 cp /var/www/rutorrent/plugins/autodl-irssi/_conf.php /var/www/rutorrent/plugins/autodl-irssi/conf.php
-sed -i "s/\$autodlPort = 0;/\$autodlPort = \$AUTODL_PORT;/" /var/www/rutorrent/plugins/autodl-irssi/conf.php
-sed -i "s/\$autodlPassword = \"\";/\$autodlPassword = \"\$AUTODL_PASS\";/" /var/www/rutorrent/plugins/autodl-irssi/conf.php
+sed -i "s/\$autodlPort = 0;/\$autodlPort = $AUTODL_PORT;/" /var/www/rutorrent/plugins/autodl-irssi/conf.php
+sed -i "s/\$autodlPassword = \"\";/\$autodlPassword = \"$AUTODL_PASS\";/" /var/www/rutorrent/plugins/autodl-irssi/conf.php
+# FORCE version bump to invalidate browser cache
+sed -i 's/version: .*/version: 2.99.99/' /var/www/rutorrent/plugins/autodl-irssi/plugin.info
 chown -R www-data:www-data /var/www/rutorrent/plugins/autodl-irssi
 msg_ok "Installed autodl-irssi Plugin"
 
