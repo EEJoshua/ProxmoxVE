@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-source <(curl -fsSL https://raw.githubusercontent.com/EEJoshua/ProxmoxVE/feature/rtorrent-lxc/misc/build.func)
+source <(curl -fsSL https://raw.githubusercontent.com/community-scripts/ProxmoxVE/main/misc/build.func)
 # Copyright (c) 2021-2026 community-scripts ORG
 # Author: EEJoshua
 # License: MIT | https://github.com/community-scripts/ProxmoxVE/raw/main/LICENSE
@@ -38,11 +38,11 @@ function update_script() {
   # Re-compile libtorrent
   if [[ -d /opt/libtorrent ]]; then
       cd /opt/libtorrent || exit
-      git pull
-      autoreconf -fiv
-      ./configure --disable-debug --enable-aligned
-      make -j$(nproc) CXXFLAGS="-w" CFLAGS="-w"
-      make install
+      $STD git pull
+      $STD autoreconf -fiv
+      $STD ./configure --disable-debug --enable-aligned
+      $STD make -j$(nproc) CXXFLAGS="-w" CFLAGS="-w"
+      $STD make install
       ldconfig
       msg_ok "Updated libtorrent"
   fi
@@ -50,18 +50,18 @@ function update_script() {
   # Re-compile rTorrent
   if [[ -d /opt/rtorrent-src ]]; then
       cd /opt/rtorrent-src || exit
-      git pull
-      autoreconf -fiv
-      ./configure --with-xmlrpc-c --disable-debug
-      make -j$(nproc) CXXFLAGS="-w" CFLAGS="-w"
-      make install
+      $STD git pull
+      $STD autoreconf -fiv
+      $STD ./configure --with-xmlrpc-c --disable-debug
+      $STD make -j$(nproc) CXXFLAGS="-w" CFLAGS="-w"
+      $STD make install
       msg_ok "Updated rTorrent"
   fi
   
   msg_info "Updating ruTorrent"
   if [[ -d /var/www/rutorrent ]]; then
       cd /var/www/rutorrent || exit
-      git pull
+      $STD git pull
       chown -R www-data:www-data /var/www/rutorrent
       msg_ok "Updated ruTorrent"
   fi
