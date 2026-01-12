@@ -98,6 +98,17 @@ make -j$(nproc) CXXFLAGS="-w" CFLAGS="-w" >/dev/null
 make install >/dev/null
 msg_ok "Compiled rTorrent"
 
+msg_info "Compiling dumptorrent"
+git clone -q https://github.com/tomcdj71/dumptorrent.git /opt/dumptorrent
+cd /opt/dumptorrent || exit
+# Compile manually as Makefile expects files in root but they are in src/
+gcc -Wall -o dumptorrent src/*.c -I include >/dev/null 2>&1
+cp dumptorrent /usr/local/bin/
+chmod +x /usr/local/bin/dumptorrent
+cd ..
+rm -rf /opt/dumptorrent
+msg_ok "Compiled dumptorrent"
+
 msg_info "Configuring rTorrent User"
 useradd -u 1000 -U -d /home/rtorrent -s /bin/bash rtorrent
 mkdir -p /home/rtorrent/{.session,download,watch}
