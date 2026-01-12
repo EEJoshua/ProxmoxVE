@@ -17,8 +17,8 @@ update_os
 export CFLAGS="-Wno-error=implicit-function-declaration -Wno-error=int-conversion -Wno-error=incompatible-pointer-types"
 export CXXFLAGS="-Wno-error=implicit-function-declaration -Wno-error=int-conversion -Wno-error=incompatible-pointer-types"
 
-# Helper function for generating random strings (from Swizzin)
-_string() { perl -le 'print map {(a..z,A..Z,0..9)[rand 62] } 0..pop' 15; }
+# Helper function for generating random alphanumeric strings
+_string() { openssl rand -base64 18 | tr -dc 'a-zA-Z0-9' | head -c16; }
 
 msg_info "Installing Dependencies"
 # Ensure non-free is enabled for unrar
@@ -71,7 +71,7 @@ PHP_FPM="YES" PHP_MODULE="curl,mbstring,cli,xml,zip,sockets" setup_php
 msg_ok "Setup PHP"
 
 msg_info "Installing Python Libraries"
-pip3 install cloudscraper --break-system-packages >/dev/null 2>&1
+$STD pip3 install cloudscraper --break-system-packages
 msg_ok "Installed Python Libraries"
 
 msg_info "Compiling XML-RPC-C"
@@ -130,7 +130,6 @@ chown -R rtorrent:rtorrent /home/rtorrent
 msg_ok "Configured rTorrent User"
 
 msg_info "Configuring Autodl-Irssi"
-# Download and install autodl-irssi (Swizzin method)
 # Download and install autodl-irssi (Swizzin method)
 RELEASE_URL=$(curl -sL https://api.github.com/repos/autodl-community/autodl-irssi/releases/latest | jq -r '.assets[0].browser_download_url')
 if [[ -z "$RELEASE_URL" || "$RELEASE_URL" == "null" ]]; then
