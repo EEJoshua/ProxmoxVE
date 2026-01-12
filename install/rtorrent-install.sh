@@ -75,17 +75,13 @@ $STD pip3 install cloudscraper --break-system-packages
 msg_ok "Installed Python Libraries"
 
 msg_info "Compiling XML-RPC-C"
-# Install advanced XML-RPC-C for rTorrent (required for i8 support)
 svn checkout -q https://svn.code.sf.net/p/xmlrpc-c/code/advanced xmlrpc-c
 cd xmlrpc-c || exit
-# Configure
 ./configure --disable-cplusplus >/dev/null
 
-# FORCE internal-check for i8 (int64) support since configure fails on modern GCC
-# MUST insert BEFORE the last line (#endif) otherwise it is ignored
+# Force i8 (int64) support since configure fails on modern GCC
 sed -i '$i #define HAVE_INT64 1' xmlrpc_config.h
 
-# Build with suppression flags for make only
 make -j$(nproc) CXXFLAGS="-w" CFLAGS="-w" ARFLAGS="rc" >/dev/null
 make install >/dev/null
 ldconfig
@@ -115,7 +111,6 @@ msg_ok "Compiled rTorrent"
 msg_info "Compiling dumptorrent"
 git clone -q https://github.com/tomcdj71/dumptorrent.git /opt/dumptorrent
 cd /opt/dumptorrent || exit
-# Compile manually as Makefile expects files in root but they are in src/
 gcc -Wall -o dumptorrent src/*.c -I include >/dev/null 2>&1
 cp dumptorrent /usr/local/bin/
 chmod +x /usr/local/bin/dumptorrent
@@ -130,7 +125,6 @@ chown -R rtorrent:rtorrent /home/rtorrent
 msg_ok "Configured rTorrent User"
 
 msg_info "Configuring Autodl-Irssi"
-# Download and install autodl-irssi (Swizzin method)
 RELEASE_URL=$(curl -sL https://api.github.com/repos/autodl-community/autodl-irssi/releases/latest | jq -r '.assets[0].browser_download_url')
 if [[ -z "$RELEASE_URL" || "$RELEASE_URL" == "null" ]]; then
     msg_error "Failed to fetch autodl-irssi release URL"
@@ -151,7 +145,6 @@ if [[ ! -f /home/rtorrent/.irssi/scripts/autodl-irssi.pl ]]; then
 fi
 cp /home/rtorrent/.irssi/scripts/autodl-irssi.pl /home/rtorrent/.irssi/scripts/autorun/
 
-# Generate Config
 IRSSI_PASS=$(_string)
 IRSSI_PORT=$(shuf -i 20000-61000 -n 1)
 mkdir -p /home/rtorrent/.autodl
@@ -161,12 +154,10 @@ gui-server-port = ${IRSSI_PORT}
 gui-server-password = ${IRSSI_PASS}
 EOF
 
-# Set permissions
 chown -R rtorrent:rtorrent /home/rtorrent/.irssi
 chown -R rtorrent:rtorrent /home/rtorrent/.autodl
 rm /tmp/autodl-irssi.zip
 
-# Create Service (Swizzin method)
 cat > "/etc/systemd/system/irssi@.service" << EOF
 [Unit]
 Description=AutoDL IRSSI
@@ -210,18 +201,17 @@ systemctl enable -q --now rtorrent
 msg_info "Installing ruTorrent"
 mkdir -p /var/www
 git clone -q https://github.com/Novik/ruTorrent.git /var/www/rutorrent
-# Patch settings.php to disable false positive XML-RPC version check
+# Disable false-positive XML-RPC version check
 sed -i 's/public \$badXMLRPCVersion = true;/public \$badXMLRPCVersion = false;/' /var/www/rutorrent/php/settings.php
 chown -R www-data:www-data /var/www/rutorrent
 chmod -R 775 /var/www/rutorrent
 msg_ok "Installed ruTorrent"
 
 msg_info "Installing Autodl-Irssi Plugin"
-# Install Plugin (Swizzin fork)
 git clone -q https://github.com/swizzin/autodl-rutorrent.git /var/www/rutorrent/plugins/autodl-irssi
 chown -R www-data:www-data /var/www/rutorrent/plugins/autodl-irssi
 
-# Configure Plugin (Use conf.php to avoid conflicts and force IPv4)
+# Use conf.php to force IPv4 and avoid config conflicts
 IRSSI_PORT=$(grep gui-server-port /home/rtorrent/.autodl/autodl.cfg | cut -d= -f2 | sed 's/ //g')
 IRSSI_PASS=$(grep gui-server-password /home/rtorrent/.autodl/autodl.cfg | cut -d= -f2 | sed 's/ //g')
 
@@ -234,7 +224,7 @@ cat <<EOF > /var/www/rutorrent/plugins/autodl-irssi/conf.php
 EOF
 chown www-data:www-data /var/www/rutorrent/plugins/autodl-irssi/conf.php
 
-# Patch UploadMethod.js to skip incompatible rDirBrowser code
+# Skip incompatible rDirBrowser code that causes JS errors
 sed -i 's/if (thePlugins.isInstalled("_getdir"))/if (false \&\& thePlugins.isInstalled("_getdir"))/' /var/www/rutorrent/plugins/autodl-irssi/js/UploadMethod.js
 
 msg_ok "Installed Autodl-Irssi Plugin"
@@ -271,7 +261,6 @@ server {
 EOF
 ln -s /etc/nginx/sites-available/rutorrent /etc/nginx/sites-enabled/rutorrent
 
-# Configure rTorrent .rtorrent.rc with RPC
 cat <<EOF >/home/rtorrent/.rtorrent.rc
 # Global settings
 directory.default.set = /home/rtorrent/download
@@ -287,7 +276,6 @@ schedule2 = watch_directory,5,5,load.start=/home/rtorrent/watch/*.torrent
 EOF
 chown rtorrent:rtorrent /home/rtorrent/.rtorrent.rc
 
-# Restart services
 systemctl restart rtorrent
 systemctl restart nginx
 systemctl restart php"${PHP_VERSION}"-fpm
