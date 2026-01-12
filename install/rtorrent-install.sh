@@ -131,9 +131,25 @@ msg_ok "Configured rTorrent User"
 
 msg_info "Configuring Autodl-Irssi"
 # Download and install autodl-irssi (Swizzin method)
-wget -q "$(curl -sL http://git.io/vlcND | jq .assets[0].browser_download_url -r)" -O /tmp/autodl-irssi.zip
+# Download and install autodl-irssi (Swizzin method)
+RELEASE_URL=$(curl -sL https://api.github.com/repos/autodl-community/autodl-irssi/releases/latest | jq -r '.assets[0].browser_download_url')
+if [[ -z "$RELEASE_URL" || "$RELEASE_URL" == "null" ]]; then
+    msg_error "Failed to fetch autodl-irssi release URL"
+    exit 1
+fi
+
+wget -q "$RELEASE_URL" -O /tmp/autodl-irssi.zip
+if [[ ! -f /tmp/autodl-irssi.zip ]]; then
+    msg_error "Failed to download autodl-irssi"
+    exit 1
+fi
+
 mkdir -p /home/rtorrent/.irssi/scripts/autorun
 unzip -o /tmp/autodl-irssi.zip -d /home/rtorrent/.irssi/scripts/ >/dev/null
+if [[ ! -f /home/rtorrent/.irssi/scripts/autodl-irssi.pl ]]; then
+    msg_error "Failed to extract autodl-irssi"
+    exit 1
+fi
 cp /home/rtorrent/.irssi/scripts/autodl-irssi.pl /home/rtorrent/.irssi/scripts/autorun/
 
 # Generate Config
