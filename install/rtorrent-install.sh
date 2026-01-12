@@ -17,6 +17,9 @@ update_os
 export CFLAGS="-Wno-error=implicit-function-declaration -Wno-error=int-conversion -Wno-error=incompatible-pointer-types"
 export CXXFLAGS="-Wno-error=implicit-function-declaration -Wno-error=int-conversion -Wno-error=incompatible-pointer-types"
 
+# Helper function for generating random strings (from Swizzin)
+_string() { perl -le 'print map {(a..z,A..Z,0..9)[rand 62] } 0..pop' 15; }
+
 msg_info "Installing Dependencies"
 # Ensure non-free is enabled for unrar
 if [[ -f /etc/apt/sources.list.d/debian.sources ]]; then
@@ -45,6 +48,8 @@ $STD apt-get install -y \
   subversion \
   libxml2-dev \
   autoconf-archive \
+  screen \
+  jq \
   python3 \
   python-is-python3 \
   python3-pip \
@@ -124,6 +129,49 @@ mkdir -p /home/rtorrent/{.session,download,watch}
 chown -R rtorrent:rtorrent /home/rtorrent
 msg_ok "Configured rTorrent User"
 
+msg_info "Configuring Autodl-Irssi"
+# Download and install autodl-irssi (Swizzin method)
+wget -q "$(curl -sL http://git.io/vlcND | jq .assets[0].browser_download_url -r)" -O /tmp/autodl-irssi.zip
+mkdir -p /home/rtorrent/.irssi/scripts/autorun
+unzip -o /tmp/autodl-irssi.zip -d /home/rtorrent/.irssi/scripts/ >/dev/null
+cp /home/rtorrent/.irssi/scripts/autodl-irssi.pl /home/rtorrent/.irssi/scripts/autorun/
+
+# Generate Config
+IRSSI_PASS=$(_string)
+IRSSI_PORT=$(shuf -i 20000-61000 -n 1)
+mkdir -p /home/rtorrent/.autodl
+cat > /home/rtorrent/.autodl/autodl.cfg << EOF
+[options]
+gui-server-port = ${IRSSI_PORT}
+gui-server-password = ${IRSSI_PASS}
+EOF
+
+# Set permissions
+chown -R rtorrent:rtorrent /home/rtorrent/.irssi
+chown -R rtorrent:rtorrent /home/rtorrent/.autodl
+rm /tmp/autodl-irssi.zip
+
+# Create Service (Swizzin method)
+cat > "/etc/systemd/system/irssi@.service" << EOF
+[Unit]
+Description=AutoDL IRSSI
+After=network.target
+
+[Service]
+Type=forking
+KillMode=none
+User=%i
+ExecStart=/usr/bin/screen -d -m -fa -S irssi /usr/bin/irssi
+ExecStop=/usr/bin/screen -S irssi -X stuff '/quit\n'
+WorkingDirectory=/home/%i/
+
+[Install]
+WantedBy=multi-user.target
+EOF
+
+systemctl enable -q --now irssi@rtorrent
+msg_ok "Configured Autodl-Irssi"
+
 msg_info "Configuring rTorrent Service"
 cat <<EOF >/etc/systemd/system/rtorrent.service
 [Unit]
@@ -152,6 +200,24 @@ sed -i 's/public \$badXMLRPCVersion = true;/public \$badXMLRPCVersion = false;/'
 chown -R www-data:www-data /var/www/rutorrent
 chmod -R 775 /var/www/rutorrent
 msg_ok "Installed ruTorrent"
+
+msg_info "Installing Autodl-Irssi Plugin"
+# Install Plugin
+git clone -q https://github.com/swizzin/autodl-rutorrent.git /var/www/rutorrent/plugins/autodl-irssi
+chown -R www-data:www-data /var/www/rutorrent/plugins/autodl-irssi
+
+# Configure Plugin Glue (Inject into global config)
+IRSSI_PORT=$(grep gui-server-port /home/rtorrent/.autodl/autodl.cfg | cut -d= -f2 | sed 's/ //g')
+IRSSI_PASS=$(grep gui-server-password /home/rtorrent/.autodl/autodl.cfg | cut -d= -f2 | sed 's/ //g')
+
+# Append to config.php (handling the closing ?> tag)
+sed -i '/?>/d' /var/www/rutorrent/conf/config.php
+cat <<EOF >> /var/www/rutorrent/conf/config.php
+\$autodlPort = "${IRSSI_PORT}";
+\$autodlPassword = "${IRSSI_PASS}";
+?>
+EOF
+msg_ok "Installed Autodl-Irssi Plugin"
 
 
 
