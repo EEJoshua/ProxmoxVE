@@ -160,7 +160,7 @@ mkdir -p /home/rtorrent/.autodl
 touch /home/rtorrent/.autodl/autodl.cfg
 # Generate password
 AUTODL_PORT="51421"
-AUTODL_PASS=$(tr -dc A-Za-z0-9 </dev/urandom | head -c 20)
+AUTODL_PASS=$(python3 -c "import secrets,string; print(''.join(secrets.choice(string.ascii_letters + string.digits) for i in range(20)))")
 echo "[options]" > /home/rtorrent/.autodl/autodl.cfg
 echo "gui-server-port = $AUTODL_PORT" >> /home/rtorrent/.autodl/autodl.cfg
 echo "gui-server-password = $AUTODL_PASS" >> /home/rtorrent/.autodl/autodl.cfg
