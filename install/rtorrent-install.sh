@@ -67,7 +67,7 @@ msg_ok "Installed Dependencies"
 
 msg_info "Setting up PHP"
 PHP_VERSION="8.3"
-PHP_FPM="YES" PHP_MODULE="curl,mbstring,cli,xml,zip" setup_php
+PHP_FPM="YES" PHP_MODULE="curl,mbstring,cli,xml,zip,sockets" setup_php
 msg_ok "Setup PHP"
 
 msg_info "Installing Python Libraries"
@@ -218,21 +218,26 @@ chmod -R 775 /var/www/rutorrent
 msg_ok "Installed ruTorrent"
 
 msg_info "Installing Autodl-Irssi Plugin"
-# Install Plugin
+# Install Plugin (Swizzin fork)
 git clone -q https://github.com/swizzin/autodl-rutorrent.git /var/www/rutorrent/plugins/autodl-irssi
 chown -R www-data:www-data /var/www/rutorrent/plugins/autodl-irssi
 
-# Configure Plugin Glue (Inject into global config)
+# Configure Plugin (Use conf.php to avoid conflicts and force IPv4)
 IRSSI_PORT=$(grep gui-server-port /home/rtorrent/.autodl/autodl.cfg | cut -d= -f2 | sed 's/ //g')
 IRSSI_PASS=$(grep gui-server-password /home/rtorrent/.autodl/autodl.cfg | cut -d= -f2 | sed 's/ //g')
 
-# Append to config.php (handling the closing ?> tag)
-sed -i '/?>/d' /var/www/rutorrent/conf/config.php
-cat <<EOF >> /var/www/rutorrent/conf/config.php
+cat <<EOF > /var/www/rutorrent/plugins/autodl-irssi/conf.php
+<?php
+\$autodlHost = "127.0.0.1";
 \$autodlPort = "${IRSSI_PORT}";
 \$autodlPassword = "${IRSSI_PASS}";
 ?>
 EOF
+chown www-data:www-data /var/www/rutorrent/plugins/autodl-irssi/conf.php
+
+# Patch UploadMethod.js to skip incompatible rDirBrowser code
+sed -i 's/if (thePlugins.isInstalled("_getdir"))/if (false \&\& thePlugins.isInstalled("_getdir"))/' /var/www/rutorrent/plugins/autodl-irssi/js/UploadMethod.js
+
 msg_ok "Installed Autodl-Irssi Plugin"
 
 
