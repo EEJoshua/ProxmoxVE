@@ -13,6 +13,10 @@ setting_up_container
 network_check
 update_os
 
+# Relax GCC 14 strictness for older codebases (resolves xmlrpc-c detection issues)
+export CFLAGS="-Wno-error=implicit-function-declaration -Wno-error=int-conversion -Wno-error=incompatible-pointer-types"
+export CXXFLAGS="-Wno-error=implicit-function-declaration -Wno-error=int-conversion -Wno-error=incompatible-pointer-types"
+
 msg_info "Installing Dependencies"
 # Ensure non-free is enabled for unrar
 if [[ -f /etc/apt/sources.list.d/debian.sources ]]; then
@@ -43,6 +47,7 @@ $STD apt-get install -y \
   autoconf-archive \
   python3 \
   python-is-python3 \
+  python3-pip \
   unrar
 msg_ok "Installed Dependencies"
 
@@ -51,13 +56,25 @@ PHP_VERSION="8.3"
 PHP_FPM="YES" PHP_MODULE="curl,mbstring,cli,xml,zip" setup_php
 msg_ok "Setup PHP"
 
+msg_info "Installing Python Libraries"
+pip3 install cloudscraper --break-system-packages >/dev/null 2>&1
+msg_ok "Installed Python Libraries"
+
 msg_info "Compiling XML-RPC-C"
 # Install advanced XML-RPC-C for rTorrent (required for i8 support)
 svn checkout -q https://svn.code.sf.net/p/xmlrpc-c/code/advanced xmlrpc-c
 cd xmlrpc-c || exit
-./configure --disable-cplusplus CXXFLAGS="-w" CFLAGS="-w" >/dev/null
+# Configure
+./configure --disable-cplusplus >/dev/null
+
+# FORCE internal-check for i8 (int64) support since configure fails on modern GCC
+# MUST insert BEFORE the last line (#endif) otherwise it is ignored
+sed -i '$i #define HAVE_INT64 1' xmlrpc_config.h
+
+# Build with suppression flags for make only
 make -j$(nproc) CXXFLAGS="-w" CFLAGS="-w" ARFLAGS="rc" >/dev/null
 make install >/dev/null
+ldconfig
 cd ..
 rm -rf xmlrpc-c
 msg_ok "Compiled XML-RPC-C"
@@ -66,8 +83,8 @@ msg_info "Compiling LibTorrent (Rakshasa)"
 git clone -q https://github.com/rakshasa/libtorrent.git /opt/libtorrent
 cd /opt/libtorrent || exit
 autoreconf -fiv >/dev/null 2>&1
-./configure --disable-debug --enable-aligned CXXFLAGS="-w" CFLAGS="-w" >/dev/null
-make -j$(nproc) >/dev/null
+./configure --disable-debug --enable-aligned >/dev/null
+make -j$(nproc) CXXFLAGS="-w" CFLAGS="-w" >/dev/null
 make install >/dev/null
 ldconfig
 msg_ok "Compiled LibTorrent"
@@ -76,8 +93,8 @@ msg_info "Compiling rTorrent (Rakshasa)"
 git clone -q https://github.com/rakshasa/rtorrent.git /opt/rtorrent-src
 cd /opt/rtorrent-src || exit
 autoreconf -fiv >/dev/null 2>&1
-./configure --with-xmlrpc-c --disable-debug CXXFLAGS="-w" CFLAGS="-w" >/dev/null
-make -j$(nproc) >/dev/null
+./configure --with-xmlrpc-c --disable-debug >/dev/null
+make -j$(nproc) CXXFLAGS="-w" CFLAGS="-w" >/dev/null
 make install >/dev/null
 msg_ok "Compiled rTorrent"
 
@@ -111,6 +128,8 @@ msg_ok "Created rTorrent Service"
 msg_info "Installing ruTorrent"
 mkdir -p /var/www
 git clone -q https://github.com/Novik/ruTorrent.git /var/www/rutorrent
+# Patch settings.php to disable false positive XML-RPC version check (issue with to_kb method)
+sed -i 's/public \$badXMLRPCVersion = true;/public \$badXMLRPCVersion = false;/' /var/www/rutorrent/php/settings.php
 chown -R www-data:www-data /var/www/rutorrent
 chmod -R 775 /var/www/rutorrent
 msg_ok "Installed ruTorrent"
