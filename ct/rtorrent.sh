@@ -31,13 +31,17 @@ function update_script() {
   msg_info "Updating rTorrent (Source Compile)"
   systemctl stop rtorrent
   
+  # Relax GCC 14 strictness
+  export CFLAGS="-Wno-error=implicit-function-declaration -Wno-error=int-conversion -Wno-error=incompatible-pointer-types"
+  export CXXFLAGS="-Wno-error=implicit-function-declaration -Wno-error=int-conversion -Wno-error=incompatible-pointer-types"
+  
   # Re-compile libtorrent
   if [[ -d /opt/libtorrent ]]; then
       cd /opt/libtorrent || exit
       git pull
       autoreconf -fiv
       ./configure --disable-debug --enable-aligned
-      make -j$(nproc)
+      make -j$(nproc) CXXFLAGS="-w" CFLAGS="-w"
       make install
       ldconfig
       msg_ok "Updated libtorrent"
@@ -49,7 +53,7 @@ function update_script() {
       git pull
       autoreconf -fiv
       ./configure --with-xmlrpc-c --disable-debug
-      make -j$(nproc)
+      make -j$(nproc) CXXFLAGS="-w" CFLAGS="-w"
       make install
       msg_ok "Updated rTorrent"
   fi
